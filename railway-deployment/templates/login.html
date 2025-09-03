@@ -421,9 +421,26 @@
             new LoginManager();
         });
         
-        // Check if user is already logged in
-        if (localStorage.getItem('access_token')) {
-            window.location.href = '/dashboard';
+        // Check if user is already logged in - let server handle validation
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            // Instead of direct redirect, make a quick auth check first
+            fetch('/api/employees', { credentials: 'same-origin' })
+                .then(response => {
+                    if (response.ok) {
+                        // User is actually authenticated, redirect to root
+                        window.location.href = '/';
+                    } else {
+                        // Token is invalid, clear it
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('user_role');
+                    }
+                })
+                .catch(() => {
+                    // Network error or auth failed, clear token
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user_role');
+                });
         }
     </script>
 </body>

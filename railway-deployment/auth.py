@@ -238,8 +238,13 @@ def login_required(f):
         # Check for token in session (fallback)
         elif 'access_token' in session:
             token = session['access_token']
+            print(f"DEBUG: Found token in session: {token[:20]}...")
+        
+        print(f"DEBUG: Session contents: {dict(session)}")
+        print(f"DEBUG: Headers: Authorization={request.headers.get('Authorization', 'None')}")
         
         if not token:
+            print("DEBUG: No authentication token found")
             return jsonify({'error': 'Authentication token is missing'}), 401
         
         # Verify token

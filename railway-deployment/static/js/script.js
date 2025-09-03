@@ -5,7 +5,24 @@ class RaffleDashboard {
         this.init();
     }
 
+    getAuthHeaders() {
+        const token = localStorage.getItem('access_token');
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
     init() {
+        // Check if user is authenticated
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = '/login';
+            return;
+        }
+        
         this.bindEvents();
         this.loadEmployees();
         this.updateDateInfo();
@@ -479,8 +496,15 @@ class RaffleDashboard {
             const formData = new FormData();
             formData.append('file', file);
 
+            const token = localStorage.getItem('access_token');
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
             const response = await fetch('/api/import_excel', {
                 method: 'POST',
+                headers: headers,
                 body: formData,
                 credentials: 'same-origin'
             });
@@ -524,9 +548,7 @@ class RaffleDashboard {
         try {
             const response = await fetch('/api/employee', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify({ name }),
                 credentials: 'same-origin'
             });
@@ -551,6 +573,7 @@ class RaffleDashboard {
     async loadEmployees() {
         try {
             const response = await fetch('/api/employees', {
+                headers: this.getAuthHeaders(),
                 credentials: 'same-origin'
             });
             const data = await response.json();
@@ -721,9 +744,7 @@ class RaffleDashboard {
             
             const response = await fetch(`/api/employee/${this.currentEmployeeId}/add_entry`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify({ 
                     activity_name: activity, 
                     activity_category: 'manual', // or determine category

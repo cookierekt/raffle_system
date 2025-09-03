@@ -206,6 +206,9 @@ def login():
             session['user_id'] = user_data['id']
             session['user_role'] = user_data['role']
             
+            print(f"DEBUG: Login successful, session set: {session.get('access_token')[:20]}...")
+            print(f"DEBUG: Session ID: {session.sid if hasattr(session, 'sid') else 'No SID'}")
+            
             return jsonify({
                 'success': True,
                 'message': message,
