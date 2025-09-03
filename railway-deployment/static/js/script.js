@@ -75,8 +75,12 @@ class SimpleDashboard {
             fileInput.addEventListener('change', (e) => {
                 console.log('File selected:', e.target.files[0]?.name);
                 if (e.target.files[0]) {
-                    // Show selected file name somewhere or auto-trigger upload
-                    this.showAlert(`File selected: ${e.target.files[0].name}`, 'info');
+                    const fileName = e.target.files[0].name;
+                    console.log(`File selected: ${fileName}, starting auto-upload...`);
+                    
+                    // Auto-upload the file immediately
+                    this.showAlert(`Uploading ${fileName}...`, 'info');
+                    this.uploadExcel();
                 }
             });
         }
@@ -276,6 +280,7 @@ class SimpleDashboard {
         }
 
         console.log('Uploading file:', fileInput.files[0].name);
+        const fileName = fileInput.files[0].name;
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
 
@@ -292,14 +297,15 @@ class SimpleDashboard {
             console.log('Upload response:', data);
             
             if (data.success) {
-                this.showAlert(`Import successful! Added ${data.employees_added} employees.`, 'success');
+                const message = `✅ Excel import successful!\n\n• File: ${fileName}\n• Added: ${data.employees_added} new employees\n• Total names found: ${data.names_found ? data.names_found.length : 'N/A'}`;
+                this.showAlert(message, 'success');
                 this.closeExcelModal();
                 this.loadEmployees();
                 
                 // Clear the file input
                 fileInput.value = '';
             } else {
-                this.showAlert(data.error || 'Import failed', 'error');
+                this.showAlert(`❌ Import failed: ${data.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to upload Excel:', error);
