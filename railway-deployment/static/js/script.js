@@ -102,20 +102,36 @@ class SimpleDashboard {
             });
         }
         
-        // Add Entry Modal handlers
-        const addEntrySubmit = document.getElementById('add-entry-submit');
-        if (addEntrySubmit) {
-            addEntrySubmit.addEventListener('click', () => {
-                this.submitAddEntry();
-            });
-        }
-        
-        const closeAddEntryModal = document.getElementById('close-add-entry-modal');
-        if (closeAddEntryModal) {
-            closeAddEntryModal.addEventListener('click', () => {
+        // All button handlers using event delegation
+        document.addEventListener('click', (e) => {
+            // Handle employee card buttons
+            if (e.target.classList.contains('add-entry-btn')) {
+                console.log('Add entry button clicked');
+                const employeeId = e.target.getAttribute('data-employee-id');
+                const employeeName = e.target.getAttribute('data-employee-name');
+                this.openAddEntryModal(employeeName, employeeId);
+            } 
+            else if (e.target.classList.contains('clear-points-btn')) {
+                console.log('Clear points button clicked');
+                const employeeId = e.target.getAttribute('data-employee-id');
+                const employeeName = e.target.getAttribute('data-employee-name');
+                this.resetPoints(employeeId, employeeName);
+            }
+            // Handle entry buttons inside modal
+            else if (e.target.classList.contains('entry-btn')) {
+                const entries = parseInt(e.target.getAttribute('data-entries'));
+                const activity = e.target.getAttribute('data-activity');
+                console.log(`Entry button clicked: ${activity}, ${entries} entries`);
+                this.addEntry(entries, activity);
                 this.closeAddEntryModal();
-            });
-        }
+            }
+            // Handle close button in Add Entry modal (it doesn't have an ID)
+            else if (e.target.classList.contains('close') && 
+                e.target.closest('#add-entry-modal')) {
+                console.log('Add Entry modal close button clicked');
+                this.closeAddEntryModal();
+            }
+        });
         
         // Close modals when clicking outside
         window.addEventListener('click', (e) => {
@@ -129,20 +145,8 @@ class SimpleDashboard {
             }
         });
         
-        // Employee actions (event delegation)
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('add-entry-btn')) {
-                console.log('Add entry button clicked');
-                const employeeId = e.target.getAttribute('data-employee-id');
-                const employeeName = e.target.getAttribute('data-employee-name');
-                this.openAddEntryModal(employeeName, employeeId);
-            } else if (e.target.classList.contains('clear-points-btn')) {
-                console.log('Clear points button clicked');
-                const employeeId = e.target.getAttribute('data-employee-id');
-                const employeeName = e.target.getAttribute('data-employee-name');
-                this.resetPoints(employeeId, employeeName);
-            }
-        });
+        // Additional employee actions (add these to the existing event delegation above)
+        // Note: Entry buttons and close buttons are handled in the event delegation above
 
         // Logout
         const logoutBtn = document.getElementById('logout-btn');
@@ -299,32 +303,6 @@ class SimpleDashboard {
         this.currentEmployeeId = null;
     }
 
-    submitAddEntry() {
-        console.log('Submitting add entry');
-        const activityInput = document.getElementById('activity-name');
-        const entriesInput = document.getElementById('entries-awarded');
-        
-        if (!activityInput || !entriesInput) {
-            this.showAlert('Modal inputs not found', 'error');
-            return;
-        }
-        
-        const activity = activityInput.value.trim();
-        const entries = parseInt(entriesInput.value);
-        
-        if (!activity) {
-            this.showAlert('Please enter an activity name', 'error');
-            return;
-        }
-        
-        if (!entries || entries < 1 || entries > 10) {
-            this.showAlert('Please enter entries between 1 and 10', 'error');
-            return;
-        }
-        
-        this.addEntry(entries, activity);
-        this.closeAddEntryModal();
-    }
 
     async uploadExcel() {
         console.log('Upload excel called');
@@ -376,19 +354,14 @@ class SimpleDashboard {
         const modalEmployeeName = document.getElementById('modal-employee-name');
         if (modalEmployeeName) {
             modalEmployeeName.textContent = employeeName;
+            console.log(`Set modal employee name to: ${employeeName}`);
         }
-        
-        // Clear previous values
-        const activityInput = document.getElementById('activity-name');
-        const entriesInput = document.getElementById('entries-awarded');
-        if (activityInput) activityInput.value = '';
-        if (entriesInput) entriesInput.value = '1';
         
         // Show modal
         const modal = document.getElementById('add-entry-modal');
         if (modal) {
             modal.style.display = 'block';
-            console.log('Add entry modal opened');
+            console.log('Add entry modal opened successfully');
         } else {
             console.log('Add entry modal not found, using prompt fallback');
             // Fallback to prompt if modal doesn't exist
