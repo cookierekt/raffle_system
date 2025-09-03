@@ -67,6 +67,11 @@ def login():
 def get_employees():
     try:
         with db.get_connection() as conn:
+            # Count total employees first
+            count_cursor = conn.execute('SELECT COUNT(*) as total FROM employees WHERE is_active = 1')
+            total = count_cursor.fetchone()['total']
+            print(f"DEBUG: Found {total} active employees")
+            
             cursor = conn.execute('''
                 SELECT id, name, email, phone, department, position, 
                        hire_date, photo_path, total_entries, is_active,
@@ -79,13 +84,19 @@ def get_employees():
             for row in cursor.fetchall():
                 employee = dict(row)
                 employees.append(employee)
+                print(f"DEBUG: Added employee: {employee['name']}")
             
-            return jsonify({
+            response_data = {
                 'success': True,
-                'employees': employees
-            })
+                'employees': employees,
+                'total': len(employees)
+            }
+            print(f"DEBUG: Returning {len(employees)} employees")
+            
+            return jsonify(response_data)
             
     except Exception as e:
+        print(f"DEBUG: Error in get_employees: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/employee', methods=['POST'])
@@ -95,6 +106,7 @@ def add_employee():
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
+        print(f"DEBUG: Adding employee: '{name}'")
         
         if not name:
             return jsonify({'success': False, 'error': 'Name is required'}), 400
@@ -105,6 +117,7 @@ def add_employee():
                 (name,)
             )
             if cursor.fetchone():
+                print(f"DEBUG: Employee '{name}' already exists")
                 return jsonify({'success': False, 'error': 'Employee already exists'}), 400
             
             conn.execute('''
@@ -113,6 +126,7 @@ def add_employee():
             ''', (name, 0, 1, datetime.now(), datetime.now()))
             
             conn.commit()
+            print(f"DEBUG: Successfully added employee '{name}'")
             
             return jsonify({
                 'success': True,
@@ -120,6 +134,7 @@ def add_employee():
             })
             
     except Exception as e:
+        print(f"DEBUG: Error adding employee: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/employee/<int:employee_id>/add_entry', methods=['POST'])
@@ -201,10 +216,15 @@ def reset_points(employee_id):
 @role_required('manager')
 def import_excel():
     try:
+        print("DEBUG: Excel import started")
+        
         if 'file' not in request.files:
+            print("DEBUG: No file in request")
             return jsonify({'success': False, 'error': 'No file provided'}), 400
         
         file = request.files['file']
+        print(f"DEBUG: File received: {file.filename}")
+        
         if file.filename == '':
             return jsonify({'success': False, 'error': 'No file selected'}), 400
         
@@ -212,11 +232,14 @@ def import_excel():
             return jsonify({'success': False, 'error': 'Invalid file type. Please upload Excel files only.'}), 400
         
         # Process Excel file
+        print("DEBUG: Loading workbook...")
         workbook = load_workbook(file)
         sheet = workbook.active
+        print(f"DEBUG: Sheet loaded, max row: {sheet.max_row}")
         
         employees_added = 0
         errors = []
+        names_found = []
         
         with db.get_connection() as conn:
             for row_num, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
@@ -225,13 +248,16 @@ def import_excel():
                 
                 # Try to find name in different columns
                 name = None
-                for cell in row[:5]:  # Check first 5 columns
+                for col_idx, cell in enumerate(row[:5]):  # Check first 5 columns
                     if cell and isinstance(cell, str) and len(cell.strip()) > 2:
                         name = cell.strip()
+                        print(f"DEBUG: Found name '{name}' in column {col_idx} row {row_num}")
                         break
                 
                 if not name:
                     continue
+                    
+                names_found.append(name)
                 
                 try:
                     # Check if employee exists
@@ -243,21 +269,33 @@ def import_excel():
                             VALUES (?, ?, ?, ?, ?)
                         ''', (name, 0, 1, datetime.now(), datetime.now()))
                         employees_added += 1
+                        print(f"DEBUG: Added employee: {name}")
+                    else:
+                        print(f"DEBUG: Employee already exists: {name}")
                         
                 except Exception as e:
-                    errors.append(f"Row {row_num}: {str(e)}")
+                    error_msg = f"Row {row_num}: {str(e)}"
+                    errors.append(error_msg)
+                    print(f"DEBUG: Error adding employee: {error_msg}")
             
             conn.commit()
+            print(f"DEBUG: Committed {employees_added} new employees")
         
-        return jsonify({
+        result = {
             'success': True,
             'message': f'Import completed. Added {employees_added} employees.',
             'employees_added': employees_added,
+            'names_found': names_found,
             'errors': errors
-        })
+        }
+        print(f"DEBUG: Import result: {result}")
+        
+        return jsonify(result)
         
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Import failed: {str(e)}'}), 500
+        error_msg = f'Import failed: {str(e)}'
+        print(f"DEBUG: Import exception: {error_msg}")
+        return jsonify({'success': False, 'error': error_msg}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
