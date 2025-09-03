@@ -102,11 +102,30 @@ class SimpleDashboard {
             });
         }
         
-        // Close modal when clicking outside
+        // Add Entry Modal handlers
+        const addEntrySubmit = document.getElementById('add-entry-submit');
+        if (addEntrySubmit) {
+            addEntrySubmit.addEventListener('click', () => {
+                this.submitAddEntry();
+            });
+        }
+        
+        const closeAddEntryModal = document.getElementById('close-add-entry-modal');
+        if (closeAddEntryModal) {
+            closeAddEntryModal.addEventListener('click', () => {
+                this.closeAddEntryModal();
+            });
+        }
+        
+        // Close modals when clicking outside
         window.addEventListener('click', (e) => {
             const excelModal = document.getElementById('excel-import-modal');
+            const addEntryModal = document.getElementById('add-entry-modal');
+            
             if (e.target === excelModal) {
                 this.closeExcelModal();
+            } else if (e.target === addEntryModal) {
+                this.closeAddEntryModal();
             }
         });
         
@@ -271,6 +290,42 @@ class SimpleDashboard {
         }
     }
 
+    closeAddEntryModal() {
+        console.log('Closing Add Entry modal');
+        const modal = document.getElementById('add-entry-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.currentEmployeeId = null;
+    }
+
+    submitAddEntry() {
+        console.log('Submitting add entry');
+        const activityInput = document.getElementById('activity-name');
+        const entriesInput = document.getElementById('entries-awarded');
+        
+        if (!activityInput || !entriesInput) {
+            this.showAlert('Modal inputs not found', 'error');
+            return;
+        }
+        
+        const activity = activityInput.value.trim();
+        const entries = parseInt(entriesInput.value);
+        
+        if (!activity) {
+            this.showAlert('Please enter an activity name', 'error');
+            return;
+        }
+        
+        if (!entries || entries < 1 || entries > 10) {
+            this.showAlert('Please enter entries between 1 and 10', 'error');
+            return;
+        }
+        
+        this.addEntry(entries, activity);
+        this.closeAddEntryModal();
+    }
+
     async uploadExcel() {
         console.log('Upload excel called');
         const fileInput = document.getElementById('excel-file');
@@ -316,12 +371,33 @@ class SimpleDashboard {
     openAddEntryModal(employeeName, employeeId) {
         console.log(`Opening add entry modal for ${employeeName} (${employeeId})`);
         this.currentEmployeeId = employeeId;
-        // Simple implementation - use prompt for now
-        const activity = prompt(`Enter activity name for ${employeeName}:`);
-        const entries = prompt('Number of entries to award (1-10):', '1');
         
-        if (activity && entries) {
-            this.addEntry(parseInt(entries), activity);
+        // Set employee name in modal
+        const modalEmployeeName = document.getElementById('modal-employee-name');
+        if (modalEmployeeName) {
+            modalEmployeeName.textContent = employeeName;
+        }
+        
+        // Clear previous values
+        const activityInput = document.getElementById('activity-name');
+        const entriesInput = document.getElementById('entries-awarded');
+        if (activityInput) activityInput.value = '';
+        if (entriesInput) entriesInput.value = '1';
+        
+        // Show modal
+        const modal = document.getElementById('add-entry-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Add entry modal opened');
+        } else {
+            console.log('Add entry modal not found, using prompt fallback');
+            // Fallback to prompt if modal doesn't exist
+            const activity = prompt(`Enter activity name for ${employeeName}:`);
+            const entries = prompt('Number of entries to award (1-10):', '1');
+            
+            if (activity && entries) {
+                this.addEntry(parseInt(entries), activity);
+            }
         }
     }
 

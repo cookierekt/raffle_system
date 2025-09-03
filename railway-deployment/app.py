@@ -39,6 +39,7 @@ def index():
     return render_template('dashboard.html')
 
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -247,13 +248,44 @@ def import_excel():
                 if not row or not any(row):
                     continue
                 
-                # Try to find name in different columns
+                # Try to find and combine first and last names
                 name = None
-                for col_idx, cell in enumerate(row[:5]):  # Check first 5 columns
-                    if cell and isinstance(cell, str) and len(cell.strip()) > 2:
-                        name = cell.strip()
-                        print(f"DEBUG: Found name '{name}' in column {col_idx} row {row_num}")
-                        break
+                first_name = None
+                last_name = None
+                
+                # Check for separate first and last name columns
+                for col_idx, cell in enumerate(row[:10]):  # Check first 10 columns
+                    if cell and isinstance(cell, str) and len(cell.strip()) > 1:
+                        cell_value = cell.strip()
+                        
+                        # Look for first name column
+                        if col_idx == 0 or 'first' in str(sheet.cell(1, col_idx + 1).value or '').lower():
+                            first_name = cell_value
+                            print(f"DEBUG: Found first name '{first_name}' in column {col_idx}")
+                        
+                        # Look for last name column
+                        elif col_idx == 1 or 'last' in str(sheet.cell(1, col_idx + 1).value or '').lower():
+                            last_name = cell_value
+                            print(f"DEBUG: Found last name '{last_name}' in column {col_idx}")
+                        
+                        # If it looks like a full name (has space)
+                        elif ' ' in cell_value and len(cell_value.split()) >= 2:
+                            name = cell_value
+                            print(f"DEBUG: Found full name '{name}' in column {col_idx}")
+                            break
+                        
+                        # Single name fallback
+                        elif not first_name and len(cell_value) > 2:
+                            first_name = cell_value
+                            print(f"DEBUG: Using '{first_name}' as name from column {col_idx}")
+                
+                # Combine first and last names if found separately
+                if first_name and last_name:
+                    name = f"{first_name} {last_name}"
+                    print(f"DEBUG: Combined name: '{name}'")
+                elif first_name:
+                    name = first_name
+                    print(f"DEBUG: Using first name only: '{name}'")
                 
                 if not name:
                     continue
