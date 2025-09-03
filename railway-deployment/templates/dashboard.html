@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Instead Quarterly Raffle Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style-fixes.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/employee-management.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <img src="{{ url_for('static', filename='images/home-instead-logo.svg') }}?v=1" alt="Home Instead Senior Care" class="home-instead-logo" onerror="console.log('Logo failed to load:', this.src)">
+                    </div>
+                </div>
+                <h1 class="title">Quarterly Raffle Dashboard</h1>
+                <div class="date-info">
+                                        <span id="current-date"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="controls-section">
+                <div class="add-employee-form">
+                    <input type="text" id="employee-name" placeholder="Enter employee name" maxlength="50">
+                    <button id="add-employee-btn" class="btn btn-primary">
+                                                Add Employee
+                    </button>
+                </div>
+                <div class="actions">
+                    <button id="start-raffle-btn" class="btn btn-raffle">
+                                                Start Raffle
+                    </button>
+                    <button id="import-excel-btn" class="btn btn-success">
+                                                Import Excel
+                    </button>
+                    <button id="analytics-btn" class="btn btn-info">
+                                                Analytics
+                    </button>
+                    <button id="refresh-btn" class="btn btn-secondary">
+                                                Refresh
+                    </button>
+                    <button id="reset-btn" class="btn btn-danger">
+                                                Reset All
+                    </button>
+                </div>
+            </div>
+
+            <div class="raffle-categories">
+                <div class="category high-impact">
+                    <div class="category-header">
+                        <div class="category-title">
+                            <h3> High-Impact Actions</h3>
+                            <p class="category-description">Exceptional contributions that significantly impact our service quality</p>
+                        </div>
+                        <div class="entry-value">3 Entries</div>
+                    </div>
+                    <ul class="category-items">
+                        <li>Perfect attendance for the entire quarter</li>
+                        <li>Referral of a new Care Professional who works at least one shift</li>
+                    </ul>
+                </div>
+
+                <div class="category strong-contributions">
+                    <div class="category-header">
+                        <div class="category-title">
+                            <h3> Strong Contributions</h3>
+                            <p class="category-description">Valuable efforts that enhance team performance and client care</p>
+                        </div>
+                        <div class="entry-value">2 Entries</div>
+                    </div>
+                    <ul class="category-items">
+                        <li>Completing all required training on time for the quarter</li>
+                        <li>Going above and beyond in a way recognized by office staff</li>
+                        <li>Participating in at least two company events or meetings during the quarter</li>
+                    </ul>
+                </div>
+
+                <div class="category everyday-excellence">
+                    <div class="category-header">
+                        <div class="category-title">
+                            <h3><i class="fas fa-trophy"></i> Everyday Excellence</h3>
+                            <p class="category-description">Consistent professionalism and adherence to company standards</p>
+                        </div>
+                        <div class="entry-value">1 Entry</div>
+                    </div>
+                    <ul class="category-items">
+                        <li>Wearing the proper uniform and badge consistently during shifts</li>
+                        <li>Covering last minute shift</li>
+                        <li>Celebrating a work anniversary during the quarter</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="employees-section">
+                <div class="section-header">
+                    <div class="section-title-area">
+                        <h2> Employee Management</h2>
+                        <p class="section-subtitle">Manage your team and track their raffle entries</p>
+                    </div>
+                    <div class="section-controls">
+                        <div class="stats-display">
+                            <div class="stat-bubble">
+                                <span class="stat-number" id="total-employees">0</span>
+                                <span class="stat-text">Employees</span>
+                            </div>
+                            <div class="stat-bubble">
+                                <span class="stat-number" id="total-entries">0</span>
+                                <span class="stat-text">Entries</span>
+                            </div>
+                        </div>
+                        <div class="view-options">
+                            <button class="view-btn active" data-view="cards">
+                                                                Cards
+                            </button>
+                            <button class="view-btn" data-view="table">
+                                                                Table
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search and Filter Bar -->
+                <div class="employee-toolbar">
+                    <div class="search-box">
+                                                <input type="text" id="employee-search-main" placeholder="Search employees by name...">
+                    </div>
+                    <div class="filter-options">
+                        <select id="department-filter">
+                            <option value="">All Departments</option>
+                        </select>
+                        <select id="entries-filter">
+                            <option value="">All Entry Counts</option>
+                            <option value="0">No Entries</option>
+                            <option value="1-5">1-5 Entries</option>
+                            <option value="6+">6+ Entries</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="employees-container" class="employees-container">
+                    <div id="employees-grid" class="employees-grid">
+                        <!-- Employee cards will be dynamically added here -->
+                    </div>
+                    
+                    <div id="employees-table" class="employees-table" style="display: none;">
+                        <table class="employee-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Department</th>
+                                    <th>Entries</th>
+                                    <th>Last Activity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employee-table-body">
+                                <!-- Table rows will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raffle Modal -->
+    <div id="raffle-modal" class="modal">
+        <div class="modal-content raffle-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-trophy"></i> Quarterly Raffle</h3>
+                <span class="close" id="close-raffle-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="raffle-container">
+                    <div class="raffle-wheel-container">
+                        <div class="raffle-wheel" id="raffle-wheel">
+                            <div class="wheel-center">
+                                                            </div>
+                            <div class="wheel-segments" id="wheel-segments">
+                                <!-- Segments will be generated by JavaScript -->
+                            </div>
+                            <div class="wheel-pointer"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="raffle-controls">
+                        <div class="raffle-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Participants:</span>
+                                <span class="stat-value" id="raffle-participants">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Entries:</span>
+                                <span class="stat-value" id="raffle-total-entries">0</span>
+                            </div>
+                        </div>
+                        
+                        <button id="spin-wheel-btn" class="btn btn-raffle btn-large">
+                                                        Spin the Wheel!
+                        </button>
+                        
+                        <div class="raffle-result" id="raffle-result" style="display: none;">
+                            <div class="winner-announcement">
+                                <div class="winner-icon">
+                                                                    </div>
+                                <h2>Congratulations!</h2>
+                                <div class="winner-name" id="winner-name"></div>
+                                <div class="winner-details" id="winner-details"></div>
+                                <button id="new-raffle-btn" class="btn btn-primary">
+                                                                        Start New Raffle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="participants-list">
+                    <h4> Participants & Their Chances</h4>
+                    <div class="participants-grid" id="participants-grid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Import Modal -->
+    <div id="excel-import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-excel"></i> Import Employees from Excel</h3>
+                <span class="close" id="close-excel-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-section">
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-content">
+                                                        <h4>Drag & Drop Excel File Here</h4>
+                            <p>or click to browse</p>
+                            <input type="file" id="excel-file" accept=".xlsx,.xls" style="display: none;">
+                            <button type="button" id="browse-file-btn" class="btn btn-primary">
+                                Browse Files
+                            </button>
+                        </div>
+                    </div>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <div class="selected-file">
+                                                        <span id="file-name"></span>
+                            <span id="file-size"></span>
+                        </div>
+                        <button type="button" id="upload-btn" class="btn btn-success">
+                            Import Employees
+                        </button>
+                    </div>
+                </div>
+                <div class="import-help">
+                    <h5> Supported File Formats</h5>
+                    <ul>
+                        <li>.xlsx (Excel 2007+)</li>
+                        <li>.xls (Excel 97-2003)</li>
+                    </ul>
+                    <h5> Tips</h5>
+                    <ul>
+                        <li>File should contain employee names in a column</li>
+                        <li>Common column names: "Name", "Employee Name", "Caregiver", "Staff"</li>
+                        <li>Duplicate employees will be skipped automatically</li>
+                        <li>All imported employees start with 0 raffle entries</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Entry Modal -->
+    <div id="add-entry-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Raffle Entry</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h4 id="modal-employee-name"></h4>
+                <div class="entry-options">
+                    <div class="entry-category">
+                        <h5>High-Impact Actions (3 entries)</h5>
+                        <div class="entry-buttons">
+                            <button class="entry-btn" data-entries="3" data-activity="Perfect attendance for entire quarter">Perfect Attendance</button>
+                            <button class="entry-btn" data-entries="3" data-activity="Referral of new Care Professional">New Referral</button>
+                            <button class="entry-btn" data-entries="3" data-activity="Covered 5+ open/last-minute shifts">5+ Extra Shifts</button>
+                        </div>
+                    </div>
+                    <div class="entry-category">
+                        <h5>Strong Contributions (2 entries)</h5>
+                        <div class="entry-buttons">
+                            <button class="entry-btn" data-entries="2" data-activity="Covered 1-4 open/last-minute shifts">1-4 Extra Shifts</button>
+                            <button class="entry-btn" data-entries="2" data-activity="Completed required training on time">Training Complete</button>
+                            <button class="entry-btn" data-entries="2" data-activity="Went above and beyond">Above & Beyond</button>
+                            <button class="entry-btn" data-entries="2" data-activity="Participated in 2+ company events">2+ Events</button>
+                        </div>
+                    </div>
+                    <div class="entry-category">
+                        <h5>Everyday Excellence (1 entry)</h5>
+                        <div class="entry-buttons">
+                            <button class="entry-btn" data-entries="1" data-activity="Proper uniform and badge consistently">Proper Uniform</button>
+                            <button class="entry-btn" data-entries="1" data-activity="Covering last minute shift">Last Minute Shift</button>
+                            <button class="entry-btn" data-entries="1" data-activity="Work anniversary this quarter">Work Anniversary</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="entry-notes">
+                    <label for="entry-notes">Additional Notes (Optional)</label>
+                    <textarea id="entry-notes" placeholder="Add any additional details about this activity..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analytics-modal" class="modal">
+        <div class="modal-content analytics-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-chart-bar"></i> Analytics Dashboard</h3>
+                <span class="close" id="close-analytics-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h4>Department Performance</h4>
+                        <canvas id="department-chart"></canvas>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Top Performers</h4>
+                        <div id="top-performers-list"></div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Recent Activity</h4>
+                        <div id="recent-activity-list"></div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Entry Trends</h4>
+                        <canvas id="trends-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
