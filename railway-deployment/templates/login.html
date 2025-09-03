@@ -395,10 +395,13 @@
                     
                     if (data.success) {
                         this.showAlert('Login successful! Redirecting...', 'success');
-                        // Store token and redirect
+                        // Store token in localStorage for client-side use
                         localStorage.setItem('access_token', data.token);
+                        localStorage.setItem('user_role', data.user.role);
+                        
+                        // Redirect to root path, let server handle the routing
                         setTimeout(() => {
-                            window.location.href = '/dashboard';
+                            window.location.href = '/';
                         }, 1000);
                     } else {
                         this.showAlert(data.message || 'Login failed');

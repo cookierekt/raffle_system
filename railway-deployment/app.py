@@ -18,10 +18,11 @@ config_name = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config[config_name])
 
 # Configure session for production
-app.config['SESSION_COOKIE_SECURE'] = config_name == 'production'
+app.config['SESSION_COOKIE_SECURE'] = True  # Always secure for Railway HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask handle domain automatically
 
 # Initialize rate limiter
 limiter = Limiter(
@@ -200,6 +201,7 @@ def login():
         
         if success:
             token = AuthManager.generate_token(user_data)
+            session.permanent = True  # Make session permanent
             session['access_token'] = token
             session['user_id'] = user_data['id']
             session['user_role'] = user_data['role']
