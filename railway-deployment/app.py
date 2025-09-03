@@ -38,9 +38,6 @@ except Exception as e:
 def index():
     return render_template('dashboard.html')
 
-@app.route('/debug')
-def debug():
-    return open('debug_frontend.html').read()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
