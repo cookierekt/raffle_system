@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Frontend</title>
+</head>
+<body>
+    <h1>Employee Debug</h1>
+    <div id="result"></div>
+    
+    <script>
+        async function testEmployees() {
+            try {
+                // First login
+                const loginResponse = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'homecare@homeinstead.com',
+                        password: 'Homeinstead3042'
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                console.log('Login response:', loginData);
+                
+                if (!loginData.success) {
+                    document.getElementById('result').innerHTML = 'Login failed: ' + loginData.message;
+                    return;
+                }
+                
+                // Get employees
+                const empResponse = await fetch('/api/employees', {
+                    headers: {
+                        'Authorization': `Bearer ${loginData.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const empData = await empResponse.json();
+                console.log('Employees response:', empData);
+                console.log('Employee count:', empData.employees ? empData.employees.length : 'No employees array');
+                console.log('First employee:', empData.employees ? empData.employees[0] : 'None');
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>API Response Analysis:</h2>
+                    <p><strong>Success:</strong> ${empData.success}</p>
+                    <p><strong>Has employees array:</strong> ${empData.employees ? 'YES' : 'NO'}</p>
+                    <p><strong>Employee count:</strong> ${empData.employees ? empData.employees.length : 0}</p>
+                    <p><strong>First employee name:</strong> ${empData.employees && empData.employees[0] ? empData.employees[0].name : 'None'}</p>
+                    <pre>${JSON.stringify(empData, null, 2)}</pre>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        testEmployees();
+    </script>
+</body>
+</html>

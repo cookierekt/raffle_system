@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 
 from config import config
 from database import db, DatabaseManager  
-from auth_simple import AuthManager, login_required, role_required
+from auth import AuthManager, login_required, role_required
 
 # Create Flask app
 app = Flask(__name__)
@@ -37,6 +37,10 @@ except Exception as e:
 @app.route('/')
 def index():
     return render_template('dashboard.html')
+
+@app.route('/debug')
+def debug():
+    return open('debug_frontend.html').read()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
