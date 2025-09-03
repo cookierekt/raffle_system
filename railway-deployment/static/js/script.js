@@ -56,13 +56,55 @@ class SimpleDashboard {
             console.log('Import excel button bound');
         }
         
+        // Browse file button
+        const browseBtn = document.getElementById('browse-file-btn');
+        if (browseBtn) {
+            browseBtn.addEventListener('click', () => {
+                console.log('Browse file button clicked');
+                const fileInput = document.getElementById('excel-file');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            });
+            console.log('Browse file button bound');
+        }
+        
+        // File input change
+        const fileInput = document.getElementById('excel-file');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                console.log('File selected:', e.target.files[0]?.name);
+                if (e.target.files[0]) {
+                    // Show selected file name somewhere or auto-trigger upload
+                    this.showAlert(`File selected: ${e.target.files[0].name}`, 'info');
+                }
+            });
+        }
+        
         const uploadBtn = document.getElementById('upload-btn');
         if (uploadBtn) {
             uploadBtn.addEventListener('click', () => {
                 console.log('Upload button clicked');
                 this.uploadExcel();
             });
+            console.log('Upload button bound');
         }
+        
+        // Modal close buttons
+        const closeExcelModal = document.getElementById('close-excel-modal');
+        if (closeExcelModal) {
+            closeExcelModal.addEventListener('click', () => {
+                this.closeExcelModal();
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            const excelModal = document.getElementById('excel-import-modal');
+            if (e.target === excelModal) {
+                this.closeExcelModal();
+            }
+        });
         
         // Employee actions (event delegation)
         document.addEventListener('click', (e) => {
@@ -201,12 +243,27 @@ class SimpleDashboard {
 
     openExcelModal() {
         console.log('Opening Excel modal');
-        // Simple implementation - just trigger file input
-        const fileInput = document.getElementById('excel-file');
-        if (fileInput) {
-            fileInput.click();
+        const modal = document.getElementById('excel-import-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            console.log('Excel modal opened');
         } else {
-            this.showAlert('Excel import not available', 'error');
+            console.log('Excel modal not found, trying direct file input');
+            // Fallback - trigger file input directly
+            const fileInput = document.getElementById('excel-file');
+            if (fileInput) {
+                fileInput.click();
+            } else {
+                this.showAlert('Excel import not available', 'error');
+            }
+        }
+    }
+
+    closeExcelModal() {
+        console.log('Closing Excel modal');
+        const modal = document.getElementById('excel-import-modal');
+        if (modal) {
+            modal.style.display = 'none';
         }
     }
 
@@ -218,6 +275,7 @@ class SimpleDashboard {
             return;
         }
 
+        console.log('Uploading file:', fileInput.files[0].name);
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
 
@@ -231,10 +289,15 @@ class SimpleDashboard {
             });
 
             const data = await response.json();
+            console.log('Upload response:', data);
             
             if (data.success) {
                 this.showAlert(`Import successful! Added ${data.employees_added} employees.`, 'success');
+                this.closeExcelModal();
                 this.loadEmployees();
+                
+                // Clear the file input
+                fileInput.value = '';
             } else {
                 this.showAlert(data.error || 'Import failed', 'error');
             }
