@@ -17,6 +17,12 @@ app = Flask(__name__)
 config_name = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config[config_name])
 
+# Configure session for production
+app.config['SESSION_COOKIE_SECURE'] = config_name == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
 # Initialize rate limiter
 limiter = Limiter(
     key_func=get_remote_address,

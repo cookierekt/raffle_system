@@ -481,7 +481,8 @@ class RaffleDashboard {
 
             const response = await fetch('/api/import_excel', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
@@ -526,7 +527,8 @@ class RaffleDashboard {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name })
+                body: JSON.stringify({ name }),
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
@@ -548,7 +550,9 @@ class RaffleDashboard {
 
     async loadEmployees() {
         try {
-            const response = await fetch('/api/employees');
+            const response = await fetch('/api/employees', {
+                credentials: 'same-origin'
+            });
             const data = await response.json();
             
             if (data.success && data.employees) {
@@ -724,7 +728,8 @@ class RaffleDashboard {
                     activity_name: activity, 
                     activity_category: 'manual', // or determine category
                     entries_awarded: entries 
-                })
+                }),
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
@@ -748,7 +753,8 @@ class RaffleDashboard {
 
         try {
             const response = await fetch(`/api/employee/${employeeId}/reset_points`, {
-                method: 'POST'
+                method: 'POST',
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
@@ -771,7 +777,8 @@ class RaffleDashboard {
 
         try {
             const response = await fetch(`/api/employee/${encodeURIComponent(employeeName)}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
@@ -795,7 +802,8 @@ class RaffleDashboard {
 
         try {
             const response = await fetch('/api/reset', {
-                method: 'POST'
+                method: 'POST',
+                credentials: 'same-origin'
             });
 
             const data = await response.json();
