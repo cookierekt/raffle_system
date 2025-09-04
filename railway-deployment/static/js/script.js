@@ -19,6 +19,7 @@ class SimpleDashboard {
         
         try {
             this.bindEvents();
+            this.checkLogoutReason();
             this.loadEmployees();
         } catch (error) {
             console.error('Error in init:', error);
@@ -31,6 +32,40 @@ class SimpleDashboard {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         };
+    }
+
+    // Helper function for API calls with automatic token expiration handling
+    async makeAuthenticatedRequest(url, options = {}) {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            console.log('No token available, redirecting to login');
+            this.logout();
+            return null;
+        }
+
+        // Add auth headers
+        options.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        try {
+            const response = await fetch(url, options);
+            
+            if (response.status === 401) {
+                console.log(`Token expired during ${options.method || 'GET'} to ${url}`);
+                localStorage.removeItem('access_token');
+                localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
+                window.location.href = '/login';
+                return null;
+            }
+
+            return response;
+        } catch (error) {
+            console.error(`API request failed: ${url}`, error);
+            throw error;
+        }
     }
 
     bindEvents() {
@@ -164,14 +199,26 @@ class SimpleDashboard {
     async loadEmployees() {
         console.log('Loading employees...');
         try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                console.log('No token found, redirecting to login');
+                this.logout();
+                return;
+            }
+
             const response = await fetch('/api/employees', {
                 headers: this.getAuthHeaders()
             });
 
             if (response.status === 401) {
-                console.log('401 error, logging out');
+                console.log('401 error - token expired or invalid, logging out');
+                localStorage.removeItem('access_token');
                 this.logout();
                 return;
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
@@ -184,10 +231,14 @@ class SimpleDashboard {
                 this.updateStats();
             } else {
                 console.log('No employees or unsuccessful response:', data);
+                // Don't show error if it's just empty - might be new deployment
+                if (data.error) {
+                    this.showAlert('Error loading employees: ' + data.error, 'error');
+                }
             }
         } catch (error) {
             console.error('Failed to load employees:', error);
-            this.showAlert('Failed to load employees', 'error');
+            this.showAlert('Failed to load employees: ' + error.message, 'error');
         }
     }
 
@@ -253,18 +304,33 @@ class SimpleDashboard {
                 body: JSON.stringify({ name: name })
             });
 
+            console.log(`Add employee response status: ${response.status}`);
+            
+            if (response.status === 401) {
+                console.log('Token expired during add employee, redirecting to login');
+                localStorage.removeItem('access_token');
+                localStorage.setItem('logout_reason', 'Session expired while adding employee. Please log in again.');
+                window.location.href = '/login';
+                return;
+            }
+
             const data = await response.json();
+            console.log('Add employee response:', data);
             
             if (data.success) {
-                this.showAlert('Employee added successfully', 'success');
+                this.showAlert(`✅ Employee "${name}" added successfully`, 'success');
                 nameInput.value = '';
-                this.loadEmployees();
+                
+                // Wait a moment before reloading
+                setTimeout(() => {
+                    this.loadEmployees();
+                }, 500);
             } else {
-                this.showAlert(data.error || 'Failed to add employee', 'error');
+                this.showAlert(`❌ Failed to add employee: ${data.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to add employee:', error);
-            this.showAlert('Failed to add employee', 'error');
+            this.showAlert(`❌ Network error: ${error.message}`, 'error');
         }
     }
 
@@ -329,11 +395,21 @@ class SimpleDashboard {
             const data = await response.json();
             console.log('Upload response:', data);
             
+            if (response.status === 401) {
+                console.log('Token expired during import, redirecting to login');
+                this.logout();
+                return;
+            }
+            
             if (data.success) {
                 const message = `✅ Excel import successful!\n\n• File: ${fileName}\n• Added: ${data.employees_added} new employees\n• Total names found: ${data.names_found ? data.names_found.length : 'N/A'}`;
                 this.showAlert(message, 'success');
                 this.closeExcelModal();
-                this.loadEmployees();
+                
+                // Wait a moment before reloading to ensure server has processed
+                setTimeout(() => {
+                    this.loadEmployees();
+                }, 1000);
                 
                 // Clear the file input
                 fileInput.value = '';
@@ -378,6 +454,8 @@ class SimpleDashboard {
         if (!this.currentEmployeeId) return;
         
         try {
+            console.log(`Adding entry: ${activityName}, ${entries} entries for employee ${this.currentEmployeeId}`);
+            
             const response = await fetch(`/api/employee/${this.currentEmployeeId}/add_entry`, {
                 method: 'POST',
                 headers: this.getAuthHeaders(),
@@ -387,17 +465,32 @@ class SimpleDashboard {
                 })
             });
 
+            console.log(`Add entry response status: ${response.status}`);
+            
+            if (response.status === 401) {
+                console.log('Token expired during add entry, redirecting to login');
+                localStorage.removeItem('access_token');
+                localStorage.setItem('logout_reason', 'Session expired while adding entry. Please log in again.');
+                window.location.href = '/login';
+                return;
+            }
+
             const data = await response.json();
+            console.log('Add entry response:', data);
             
             if (data.success) {
-                this.showAlert('Entry added successfully', 'success');
-                this.loadEmployees();
+                this.showAlert(`✅ Entry added successfully!\n• Activity: ${activityName}\n• Entries: ${entries}`, 'success');
+                
+                // Wait a moment before reloading
+                setTimeout(() => {
+                    this.loadEmployees();
+                }, 500);
             } else {
-                this.showAlert(data.error || 'Failed to add entry', 'error');
+                this.showAlert(`❌ Failed to add entry: ${data.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to add entry:', error);
-            this.showAlert('Failed to add entry', 'error');
+            this.showAlert(`❌ Network error: ${error.message}`, 'error');
         }
     }
 
@@ -411,17 +504,32 @@ class SimpleDashboard {
                 headers: this.getAuthHeaders()
             });
 
+            console.log(`Reset points response status: ${response.status}`);
+            
+            if (response.status === 401) {
+                console.log('Token expired during reset points, redirecting to login');
+                localStorage.removeItem('access_token');
+                localStorage.setItem('logout_reason', 'Session expired while resetting points. Please log in again.');
+                window.location.href = '/login';
+                return;
+            }
+
             const data = await response.json();
+            console.log('Reset points response:', data);
             
             if (data.success) {
-                this.showAlert('Points reset successfully', 'success');
-                this.loadEmployees();
+                this.showAlert(`✅ Points reset successfully for ${employeeName}`, 'success');
+                
+                // Wait a moment before reloading
+                setTimeout(() => {
+                    this.loadEmployees();
+                }, 500);
             } else {
-                this.showAlert(data.error || 'Failed to reset points', 'error');
+                this.showAlert(`❌ Failed to reset points: ${data.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Failed to reset points:', error);
-            this.showAlert('Failed to reset points', 'error');
+            this.showAlert(`❌ Network error: ${error.message}`, 'error');
         }
     }
 
@@ -448,7 +556,20 @@ class SimpleDashboard {
     logout() {
         console.log('Logging out...');
         localStorage.removeItem('access_token');
+        
+        // Show message about why logout happened
+        localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
+        
         window.location.href = '/login';
+    }
+
+    // Check if we need to show logout message
+    checkLogoutReason() {
+        const reason = localStorage.getItem('logout_reason');
+        if (reason) {
+            this.showAlert(reason, 'info');
+            localStorage.removeItem('logout_reason');
+        }
     }
 
     showAlert(message, type = 'info') {
