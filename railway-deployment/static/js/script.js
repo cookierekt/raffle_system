@@ -8,21 +8,57 @@ class SimpleDashboard {
 
     init() {
         console.log('SimpleDashboard init called');
+        
+        // Prevent multiple redirects - check if we're already being redirected
+        if (localStorage.getItem('redirecting') === 'true') {
+            console.log('Already redirecting, skipping init');
+            return;
+        }
+        
         // Check authentication
         const token = localStorage.getItem('access_token');
         if (!token) {
             console.log('No token found, redirecting to login');
+            localStorage.setItem('redirecting', 'true');
             window.location.href = '/login';
             return;
         }
-        console.log('Token found, binding events and loading employees');
         
+        console.log('Token found, checking validity...');
+        this.validateTokenAndInit(token);
+    }
+    
+    async validateTokenAndInit(token) {
+        // Quick token validation before doing anything else
         try {
-            this.bindEvents();
-            this.checkLogoutReason();
-            this.loadEmployees();
+            const response = await fetch('/api/employees', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.status === 401) {
+                console.log('Token invalid on init, redirecting to login');
+                localStorage.removeItem('access_token');
+                localStorage.setItem('redirecting', 'true');
+                localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
+                window.location.href = '/login';
+                return;
+            }
+            
+            console.log('Token valid, proceeding with initialization');
+            localStorage.removeItem('redirecting');
+            
+            try {
+                this.bindEvents();
+                this.checkLogoutReason();
+                this.loadEmployees();
+            } catch (error) {
+                console.error('Error in init:', error);
+            }
+            
         } catch (error) {
-            console.error('Error in init:', error);
+            console.error('Token validation failed:', error);
+            localStorage.setItem('redirecting', 'true');
+            window.location.href = '/login';
         }
     }
 

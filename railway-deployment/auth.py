@@ -18,7 +18,8 @@ class AuthManager:
             'id': user_data['id'],
             'email': user_data['email'],
             'role': user_data['role'],
-            'exp': datetime.utcnow() + timedelta(hours=24)  # 24 hour expiration
+            'exp': datetime.utcnow() + timedelta(hours=5),  # 5 hour expiration
+            'iat': datetime.utcnow()  # Issued at time
         }
         return jwt.encode(payload, current_app.config['JWT_SECRET'], algorithm='HS256')
     
@@ -27,14 +28,25 @@ class AuthManager:
         """Verify JWT token and return user data"""
         try:
             payload = jwt.decode(token, current_app.config['JWT_SECRET'], algorithms=['HS256'])
+            
+            # Check if token is close to expiry (within 30 minutes) and log it
+            exp_time = datetime.utcfromtimestamp(payload['exp'])
+            time_until_exp = exp_time - datetime.utcnow()
+            
+            if time_until_exp.total_seconds() < 1800:  # Less than 30 minutes
+                print(f"DEBUG: Token for {payload['email']} expires in {time_until_exp}")
+            
             return {
                 'id': payload['id'],
                 'email': payload['email'], 
-                'role': payload['role']
+                'role': payload['role'],
+                'exp': payload['exp']
             }
         except jwt.ExpiredSignatureError:
+            print(f"DEBUG: Token expired for token: {token[:20]}...")
             return None
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            print(f"DEBUG: Invalid token error: {e}")
             return None
     
     @staticmethod
@@ -85,14 +97,19 @@ def login_required(f):
         auth_header = request.headers.get('Authorization', '')
         if auth_header.startswith('Bearer '):
             token = auth_header[7:]  # Remove 'Bearer ' prefix
+            print(f"DEBUG: Received token for {f.__name__}: {token[:20]}...")
         
         if not token:
+            print(f"DEBUG: No token provided for {f.__name__}")
             return jsonify({'error': 'Authentication token required'}), 401
         
         # Verify token
         user_data = AuthManager.verify_token(token)
         if not user_data:
+            print(f"DEBUG: Token verification failed for {f.__name__}")
             return jsonify({'error': 'Invalid or expired token'}), 401
+        
+        print(f"DEBUG: Token verified for {f.__name__} - User: {user_data['email']}")
         
         # Add user data to request
         request.current_user = user_data
