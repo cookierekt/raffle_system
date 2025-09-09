@@ -163,35 +163,7 @@
                 this.btn = document.getElementById('loginBtn');
                 this.alertContainer = document.getElementById('alertContainer');
                 
-                // Clear any redirect flags
-                localStorage.removeItem('redirecting');
-                
                 this.form.addEventListener('submit', (e) => this.handleLogin(e));
-                
-                // Check if already logged in
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    // Test token validity
-                    this.testToken(token);
-                }
-            }
-            
-            async testToken(token) {
-                try {
-                    const response = await fetch('/api/employees', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        window.location.href = '/';
-                    } else {
-                        localStorage.removeItem('access_token');
-                    }
-                } catch (error) {
-                    localStorage.removeItem('access_token');
-                }
             }
             
             showAlert(message, type = 'error') {
@@ -232,7 +204,6 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        localStorage.setItem('access_token', data.token);
                         this.showAlert('Login successful! Redirecting...', 'success');
                         
                         setTimeout(() => {

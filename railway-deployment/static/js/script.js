@@ -9,97 +9,34 @@ class SimpleDashboard {
     init() {
         console.log('SimpleDashboard init called');
         
-        // Prevent multiple redirects - check if we're already being redirected
-        if (localStorage.getItem('redirecting') === 'true') {
-            console.log('Already redirecting, skipping init');
-            return;
-        }
-        
-        // Check authentication
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            console.log('No token found, redirecting to login');
-            localStorage.setItem('redirecting', 'true');
-            window.location.href = '/login';
-            return;
-        }
-        
-        console.log('Token found, checking validity...');
-        this.validateTokenAndInit(token);
+        // Simple initialization - no token checking needed
+        this.bindEvents();
+        this.loadEmployees();
+        this.updateDateInfo();
+        this.updateStats();
     }
     
-    async validateTokenAndInit(token) {
-        // Quick token validation before doing anything else
-        try {
-            const response = await fetch('/api/employees', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.status === 401) {
-                console.log('Token invalid on init, redirecting to login');
-                localStorage.removeItem('access_token');
-                localStorage.setItem('redirecting', 'true');
-                localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
-                window.location.href = '/login';
-                return;
-            }
-            
-            console.log('Token valid, proceeding with initialization');
-            localStorage.removeItem('redirecting');
-            
-            try {
-                this.bindEvents();
-                this.checkLogoutReason();
-                this.loadEmployees();
-            } catch (error) {
-                console.error('Error in init:', error);
-            }
-            
-        } catch (error) {
-            console.error('Token validation failed:', error);
-            localStorage.setItem('redirecting', 'true');
-            window.location.href = '/login';
-        }
-    }
-
-    getAuthHeaders() {
-        const token = localStorage.getItem('access_token');
+    // Simple headers for requests (no token needed)
+    getHeaders() {
         return {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         };
     }
 
-    // Helper function for API calls with automatic token expiration handling
-    async makeAuthenticatedRequest(url, options = {}) {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            console.log('No token available, redirecting to login');
-            this.logout();
-            return null;
-        }
-
-        // Add auth headers
-        options.headers = {
-            ...options.headers,
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        };
-
+    // Simple function for API calls (no authentication needed)
+    async makeRequest(url, options = {}) {
         try {
             const response = await fetch(url, options);
             
             if (response.status === 401) {
-                console.log(`Token expired during ${options.method || 'GET'} to ${url}`);
-                localStorage.removeItem('access_token');
-                localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
+                alert('Session expired. Please log in again.');
                 window.location.href = '/login';
                 return null;
             }
-
+            
             return response;
         } catch (error) {
-            console.error(`API request failed: ${url}`, error);
+            console.error('Network error:', error);
             throw error;
         }
     }
@@ -235,21 +172,11 @@ class SimpleDashboard {
     async loadEmployees() {
         console.log('Loading employees...');
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                console.log('No token found, redirecting to login');
-                this.logout();
-                return;
-            }
-
-            const response = await fetch('/api/employees', {
-                headers: this.getAuthHeaders()
-            });
+            const response = await fetch('/api/employees');
 
             if (response.status === 401) {
-                console.log('401 error - token expired or invalid, logging out');
-                localStorage.removeItem('access_token');
-                this.logout();
+                alert('Session expired. Please log in again.');
+                window.location.href = '/login';
                 return;
             }
 
@@ -336,7 +263,7 @@ class SimpleDashboard {
         try {
             const response = await fetch('/api/employee', {
                 method: 'POST',
-                headers: this.getAuthHeaders(),
+                headers: this.getHeaders(),
                 body: JSON.stringify({ name: name })
             });
 
@@ -344,8 +271,8 @@ class SimpleDashboard {
             
             if (response.status === 401) {
                 console.log('Token expired during add employee, redirecting to login');
-                localStorage.removeItem('access_token');
-                localStorage.setItem('logout_reason', 'Session expired while adding employee. Please log in again.');
+                
+                
                 window.location.href = '/login';
                 return;
             }
@@ -494,7 +421,7 @@ class SimpleDashboard {
             
             const response = await fetch(`/api/employee/${this.currentEmployeeId}/add_entry`, {
                 method: 'POST',
-                headers: this.getAuthHeaders(),
+                headers: this.getHeaders(),
                 body: JSON.stringify({
                     activity_name: activityName,
                     entries_awarded: entries
@@ -505,8 +432,8 @@ class SimpleDashboard {
             
             if (response.status === 401) {
                 console.log('Token expired during add entry, redirecting to login');
-                localStorage.removeItem('access_token');
-                localStorage.setItem('logout_reason', 'Session expired while adding entry. Please log in again.');
+                
+                
                 window.location.href = '/login';
                 return;
             }
@@ -537,15 +464,15 @@ class SimpleDashboard {
         try {
             const response = await fetch(`/api/employee/${employeeId}/reset_points`, {
                 method: 'POST',
-                headers: this.getAuthHeaders()
+                headers: this.getHeaders()
             });
 
             console.log(`Reset points response status: ${response.status}`);
             
             if (response.status === 401) {
                 console.log('Token expired during reset points, redirecting to login');
-                localStorage.removeItem('access_token');
-                localStorage.setItem('logout_reason', 'Session expired while resetting points. Please log in again.');
+                
+                
                 window.location.href = '/login';
                 return;
             }
@@ -591,10 +518,10 @@ class SimpleDashboard {
 
     logout() {
         console.log('Logging out...');
-        localStorage.removeItem('access_token');
+        
         
         // Show message about why logout happened
-        localStorage.setItem('logout_reason', 'Session expired. Please log in again.');
+        
         
         window.location.href = '/login';
     }
@@ -604,7 +531,7 @@ class SimpleDashboard {
         const reason = localStorage.getItem('logout_reason');
         if (reason) {
             this.showAlert(reason, 'info');
-            localStorage.removeItem('logout_reason');
+            
         }
     }
 

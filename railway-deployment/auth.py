@@ -88,31 +88,22 @@ class AuthManager:
             return False, "Login error occurred", None
 
 def login_required(f):
-    """Simplified login decorator using only Authorization headers"""
+    """SIMPLE login decorator using Flask sessions"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = None
+        from flask import session
         
-        # Check Authorization header
-        auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer '):
-            token = auth_header[7:]  # Remove 'Bearer ' prefix
-            print(f"DEBUG: Received token for {f.__name__}: {token[:20]}...")
+        # Just check if user is logged in via session
+        if 'user_id' not in session or 'user_role' not in session:
+            return jsonify({'error': 'Please log in'}), 401
         
-        if not token:
-            print(f"DEBUG: No token provided for {f.__name__}")
-            return jsonify({'error': 'Authentication token required'}), 401
-        
-        # Verify token
-        user_data = AuthManager.verify_token(token)
-        if not user_data:
-            print(f"DEBUG: Token verification failed for {f.__name__}")
-            return jsonify({'error': 'Invalid or expired token'}), 401
-        
-        print(f"DEBUG: Token verified for {f.__name__} - User: {user_data['email']}")
-        
-        # Add user data to request
-        request.current_user = user_data
+        # Add user data to request context
+        request.current_user = {
+            'user_id': session['user_id'],
+            'role': session['user_role'],
+            'email': session.get('user_email', ''),
+            'name': session.get('user_name', '')
+        }
         return f(*args, **kwargs)
     
     return decorated_function
