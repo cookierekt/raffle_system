@@ -37,29 +37,37 @@ except Exception as e:
 @app.route('/')
 def index():
     from flask import session
+    print(f"DEBUG: Index route called, session: {dict(session)}")
     # Simple session check
     if session.get('logged_in'):
+        print("DEBUG: User is logged in, showing dashboard")
         return render_template('dashboard.html')
+    print("DEBUG: User not logged in, redirecting to login")
     return redirect(url_for('login'))
 
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    from flask import session
+    print(f"DEBUG: Login route called, method: {request.method}")
+    
     if request.method == 'POST':
         data = request.get_json()
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
+        print(f"DEBUG: Login attempt - email: {email}")
         
         # SIMPLE LOGIN - just use hardcoded credentials
         if email == 'admin@admin.com' and password == 'admin123':
             # Set simple session
-            from flask import session
             session['user_id'] = 1
             session['user_role'] = 'admin'
             session['user_email'] = email
             session['user_name'] = 'Administrator'
             session['logged_in'] = True
+            
+            print(f"DEBUG: Session after login: {dict(session)}")
             
             return jsonify({
                 'success': True,
@@ -72,9 +80,25 @@ def login():
                 }
             })
         else:
+            print("DEBUG: Invalid credentials provided")
             return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
     
+    print("DEBUG: Showing login form")
     return render_template('login.html')
+
+@app.route('/dashboard')
+def dashboard():
+    from flask import session
+    print(f"DEBUG: Dashboard route called, session: {dict(session)}")
+    if session.get('logged_in'):
+        return render_template('dashboard.html')
+    return redirect(url_for('login'))
+
+@app.route('/test-session')
+def test_session():
+    from flask import session
+    session['test'] = 'working'
+    return f"Session test - set 'test' to 'working'. Session contents: {dict(session)}"
 
 @app.route('/api/employees', methods=['GET'])
 @login_required
