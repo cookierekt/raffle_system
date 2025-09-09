@@ -139,13 +139,8 @@
         
         <form id="loginForm">
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" required>
-            </div>
-            
-            <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" required>
+                <input type="password" id="password" required placeholder="Enter password">
             </div>
             
             <button type="submit" class="login-btn" id="loginBtn">
@@ -181,11 +176,10 @@
             async handleLogin(e) {
                 e.preventDefault();
                 
-                const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
                 
-                if (!email || !password) {
-                    this.showAlert('Please enter both email and password');
+                if (!password) {
+                    this.showAlert('Please enter the password');
                     return;
                 }
                 
@@ -198,7 +192,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ email, password })
+                        body: JSON.stringify({ password })
                     });
                     
                     const data = await response.json();

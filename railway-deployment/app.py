@@ -48,52 +48,32 @@ except Exception as e:
 
 @app.route('/')
 def index():
-    # ULTRA SIMPLE - just show the dashboard directly
-    return render_template('dashboard.html')
+    # Check if password cookie is set
+    if request.cookies.get('auth') == 'Homeinstead3042':
+        return render_template('dashboard.html')
+    return redirect(url_for('login'))
 
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    from flask import session
-    print(f"DEBUG: Login route called, method: {request.method}")
-    
     if request.method == 'POST':
         data = request.get_json()
-        email = data.get('email', '').strip().lower()
         password = data.get('password', '')
-        print(f"DEBUG: Login attempt - email: {email}")
         
-        # SIMPLE LOGIN - just use hardcoded credentials
-        if email == 'admin@admin.com' and password == 'admin123':
-            # Set simple session
-            session.permanent = True
-            session['user_id'] = 1
-            session['user_role'] = 'admin'
-            session['user_email'] = email
-            session['user_name'] = 'Administrator'
-            session['logged_in'] = True
-            
-            print(f"DEBUG: Session after login: {dict(session)}")
-            
-            # Force session to be saved
-            session.modified = True
-            
-            return jsonify({
+        # SIMPLE PASSWORD CHECK
+        if password == 'Homeinstead3042':
+            from flask import make_response
+            response = make_response(jsonify({
                 'success': True,
-                'message': 'Login successful',
-                'user': {
-                    'id': 1,
-                    'email': email,
-                    'role': 'admin',
-                    'name': 'Administrator'
-                }
-            })
+                'message': 'Login successful'
+            }))
+            # Set cookie that expires in 30 days
+            response.set_cookie('auth', 'Homeinstead3042', max_age=30*24*60*60)
+            return response
         else:
-            print("DEBUG: Invalid credentials provided")
-            return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+            return jsonify({'success': False, 'message': 'Invalid password'}), 401
     
-    print("DEBUG: Showing login form")
     return render_template('login.html')
 
 @app.route('/dashboard')

@@ -88,9 +88,12 @@ class AuthManager:
             return False, "Login error occurred", None
 
 def login_required(f):
-    """NO LOGIN REQUIRED - just pass through"""
+    """SIMPLE COOKIE CHECK"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if request.cookies.get('auth') != 'Homeinstead3042':
+            return jsonify({'error': 'Please log in'}), 401
+        
         # Fake user data
         request.current_user = {
             'user_id': 1,
