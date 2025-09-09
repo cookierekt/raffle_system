@@ -15,6 +15,18 @@ app = Flask(__name__)
 config_name = os.getenv('FLASK_ENV', 'production')
 app.config.from_object(config[config_name])
 
+# Ensure secret key is set for sessions
+if not app.config.get('SECRET_KEY'):
+    app.config['SECRET_KEY'] = 'simple-secret-key-for-sessions'
+
+# Configure session
+from datetime import timedelta
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    
+print(f"DEBUG: Flask secret key configured: {bool(app.config.get('SECRET_KEY'))}")
+
 # Initialize rate limiter
 limiter = Limiter(
     key_func=get_remote_address,
@@ -61,6 +73,7 @@ def login():
         # SIMPLE LOGIN - just use hardcoded credentials
         if email == 'admin@admin.com' and password == 'admin123':
             # Set simple session
+            session.permanent = True
             session['user_id'] = 1
             session['user_role'] = 'admin'
             session['user_email'] = email
@@ -68,6 +81,9 @@ def login():
             session['logged_in'] = True
             
             print(f"DEBUG: Session after login: {dict(session)}")
+            
+            # Force session to be saved
+            session.modified = True
             
             return jsonify({
                 'success': True,
