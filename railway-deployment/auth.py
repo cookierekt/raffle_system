@@ -88,41 +88,27 @@ class AuthManager:
             return False, "Login error occurred", None
 
 def login_required(f):
-    """SIMPLE login decorator using Flask sessions"""
+    """NO LOGIN REQUIRED - just pass through"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        from flask import session
-        
-        # Just check if user is logged in via session
-        if 'user_id' not in session or 'user_role' not in session:
-            return jsonify({'error': 'Please log in'}), 401
-        
-        # Add user data to request context
+        # Fake user data
         request.current_user = {
-            'user_id': session['user_id'],
-            'role': session['user_role'],
-            'email': session.get('user_email', ''),
-            'name': session.get('user_name', '')
+            'user_id': 1,
+            'role': 'admin',
+            'email': 'admin@admin.com',
+            'name': 'Administrator'
         }
         return f(*args, **kwargs)
     
     return decorated_function
 
 def role_required(required_role: str):
-    """Role-based access control"""
+    """NO ROLE CHECK - just pass through"""
     def decorator(f):
         @wraps(f)
+        @login_required
         def decorated_function(*args, **kwargs):
-            if not hasattr(request, 'current_user'):
-                return jsonify({'error': 'User not authenticated'}), 401
-            
-            role_hierarchy = {'viewer': 1, 'manager': 2, 'admin': 3}
-            user_level = role_hierarchy.get(request.current_user['role'], 0)
-            required_level = role_hierarchy.get(required_role, 999)
-            
-            if user_level < required_level:
-                return jsonify({'error': 'Insufficient permissions'}), 403
-            
+            # Just pass through - no role checking
             return f(*args, **kwargs)
         return decorated_function
     return decorator

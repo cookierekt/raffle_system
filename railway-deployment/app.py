@@ -48,14 +48,8 @@ except Exception as e:
 
 @app.route('/')
 def index():
-    from flask import session
-    print(f"DEBUG: Index route called, session: {dict(session)}")
-    # Simple session check
-    if session.get('logged_in'):
-        print("DEBUG: User is logged in, showing dashboard")
-        return render_template('dashboard.html')
-    print("DEBUG: User not logged in, redirecting to login")
-    return redirect(url_for('login'))
+    # ULTRA SIMPLE - just show the dashboard directly
+    return render_template('dashboard.html')
 
 
 
